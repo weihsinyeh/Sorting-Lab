@@ -1,0 +1,13 @@
+reset  
+set title 'my plot'
+set xlabel 'number of element'
+set ylabel 'time(sec)'
+set style fill solid
+set title 'performance comparison between random data and ascending data'
+set terminal png
+set output 'runtime.png'
+
+plot "out1.txt" using 1 with points title "random data", \
+     "out2.txt" using 1 with points title "ascending data"
+replot 
+
