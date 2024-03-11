@@ -3,73 +3,85 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <time.h>
-#include "cpucycles.h"
-//#include "list.h"
-
+#include "list.h"
 typedef struct __node {
-    struct __node *left, *right;
-    struct __node *next;
-    long value;
+    int value;
+    struct list_head list;
 } node_t;
-void list_add(node_t **list, node_t *node_t)
+
+
+struct list_head *list_new()
 {
-    node_t->next = *list;
-    *list = node_t;
+    struct list_head *head = malloc(sizeof(struct list_head));
+
+    if (!head)
+        return NULL;
+
+    INIT_LIST_HEAD(head);
+    return head;
 }
 
-node_t *list_tail(node_t **left)
+
+struct list_head *list_tail(struct list_head *head)
 {
-    while ((*left) && (*left)->next)
-        left = &((*left)->next);
-    return *left;
+    return head->prev;
 }
 
-int list_length(node_t **left)
+int list_length(struct list_head *head)
 {
-    int n = 0;
-    while (*left) {
-        ++n;
-        left = &((*left)->next);
-    }
-    return n;
+    if (!head || list_empty(head))
+        return 0;
+
+    int count = 0;
+    struct list_head *node;
+    list_for_each (node, head)
+        count += 1;
+
+    return count;
 }
 
-node_t *list_construct(node_t *list, int n)
+struct list_head *list_construct(struct list_head *head, int n)
 {
-    node_t *node = malloc(sizeof(node_t));
-    node->next = list;
-    node->value = n;
-    return node;
+    if (!head)
+        return NULL;
+
+    node_t *new_element = (node_t *) malloc(sizeof(node_t));
+    if (!new_element)
+        return NULL;
+
+    new_element->value = n;
+    list_add_tail(&(new_element->list), head);
+
+    return head;
 }
 
-void list_free(node_t **list)
+void list_free(struct list_head *head)
 {
-    node_t *node = (*list)->next;
-    while (*list) {
-        free(*list);
-        *list = node;
-        if (node)
-            node = node->next;
-    }
+    if (!head)
+        return;
+
+    node_t *entry, *safe;
+    list_for_each_entry_safe (entry, safe, head, list)
+        free(entry);
+
+    free(head);
+    return;
 }
 /* Verify if list is order */
-static bool list_is_ordered(node_t *list)
+static bool list_is_ordered(struct list_head *head)
 {
-    bool first = true;
-    int value;
-    while (list) {
-        if (first) {
-            value = list->value;
-            first = false;
-        } else {
-            if (list->value < value)
-                return false;
-            value = list->value;
-        }
-        list = list->next;
+    if (!head || list_empty(head))
+        return false;
+
+    node_t *entry = NULL, *safe = NULL;
+    list_for_each_entry_safe (entry, safe, head, list) {
+        if (&safe->list == head)
+            break;
+        if (entry->value > safe->value)
+            return false;
     }
+
     return true;
 }
 
@@ -86,95 +98,90 @@ void shuffle(int *array, size_t n)
         array[i] = t;
     }
 }
-void quick_sort(node_t **list)
+void print(struct list_head *head)
 {
-    int n = list_length(list);
-    int value;
-    int i = 0;
+    if (!head || list_empty(head))
+        return;
+
+    node_t *entry = NULL;
+
+    list_for_each_entry (entry, head, list)
+        printf("%d ", entry->value);
+}
+struct list_head *quick_sort(struct list_head *head)
+{
+    if (!head || list_empty(head))
+        return NULL;
+
+    int n = list_length(head);
+    int i = 0, value;
     int max_level = 2 * n;
-    node_t *begin[max_level], *end[max_level];
-    node_t *result = NULL, *left = NULL, *right = NULL;
-    
-    begin[0] = *list;
-    end[0] = list_tail(list);
-            
+
+    struct list_head **begin = calloc(sizeof(struct list_head *), max_level);
+
+    struct list_head *result = NULL, *left = NULL, *right = NULL, *mid = NULL;
+
+    result = list_new();
+    begin[0] = head;
+
     while (i >= 0) {
-        node_t *L = begin[i], *R = end[i];
+        struct list_head *L = begin[i]->next, *R = begin[i]->prev;
         if (L != R) {
-            node_t *pivot = L;
+            right = list_new();
+            left = list_new();
+            mid = list_new();
+
+            node_t *pivot = list_entry(L, node_t, list);
             value = pivot->value;
-            node_t *p = pivot->next;
-            pivot->next = NULL;
-    
-            while (p) {
-                node_t *n = p;
-                p = p->next;
-                list_add(n->value > value ? &right : &left, n);
+
+            list_del(&pivot->list);
+            list_add(&pivot->list, mid);
+
+            struct list_head *iter = L->next;  // iterator node_t
+            struct list_head *next = NULL;
+
+            list_for_each_safe (iter, next, begin[i]) {
+                list_del(iter);
+                list_add(iter, list_entry(iter, node_t, list)->value < value
+                                   ? right
+                                   : left);
             }
 
             begin[i] = left;
-            end[i] = list_tail(&left);
-            begin[i + 1] = pivot;
-            end[i + 1] = pivot;
+            begin[i + 1] = mid;
             begin[i + 2] = right;
-            end[i + 2] = list_tail(&right);
+            left = right = mid = NULL;
 
-            left = right = NULL;
             i += 2;
+
         } else {
-            if (L)
-                list_add(&result, L);
+            if (!(!L || list_empty(L)))
+                list_splice_tail(begin[i], result);
+
             i--;
         }
     }
-    *list = result;
+    return result;
 }
-const char* filename1 = "out1.txt";
-const char* filename2 = "out2.txt";
 void main(int argc, char **argv)
 {
-    
-    
-    for (int number = 10; number <= 10000; number ++ ){
-        //printf("%d\n", number);
-        //fflush(stdout);
-        size_t count = number;
-        int64_t *before_ticks = calloc(1, sizeof(int64_t));
-        int64_t *after_ticks = calloc(1, sizeof(int64_t));
-        int64_t *exec_times = calloc(1, sizeof(int64_t));
+    struct list_head *list = list_new();
 
-        node_t *list = NULL;
+    size_t count = 100000;
+    int *test_arr = calloc(sizeof(int), count);
 
- 
+    for (int i = 0; i < count; ++i)
+        test_arr[i] = i;
+    shuffle(test_arr, count);
 
-        int *test_arr = calloc(count,sizeof(int));
+    while (count--)
+        list = list_construct(list, test_arr[count]);
 
-        for (int i = 0; i < count; ++i)
-            test_arr[i] = i;
-        //shuffle(test_arr, count);
+    list = quick_sort(list);
+    assert(list_is_ordered(list));
+    // print(list);
+    list_free(list);
+    free(test_arr);
 
-        while (count--)
-            list = list_construct(list, test_arr[count]);
-
-        before_ticks[0] = cpucycles(); 
-        quick_sort(&list);
-        after_ticks[0] = cpucycles();
-        exec_times[0] = after_ticks[0] - before_ticks[0];
- 
-        FILE* output_file = fopen(filename2, "a");
-        if (!output_file) {
-            perror("fopen");
-            exit(EXIT_FAILURE);
-        }
-        fprintf(output_file, "%ld\n", exec_times[0]);
-        fclose(output_file);
-     
-        assert(list_is_ordered(list));
-        
-
-        
-        list_free(&list);
-        free(test_arr);
-    }
     return;
 }

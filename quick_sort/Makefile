@@ -14,6 +14,6 @@ clean:
 		rm -f *.dSYM
 		rm -f main 
 		rm -f .*.o.d
-		
+
 plot: output.txt
-        gnuplot scripts/runtime.gp
+		gnuplot scripts/runtime.gp
