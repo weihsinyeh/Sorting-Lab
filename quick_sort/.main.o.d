@@ -1,1 +1,1 @@
-main.o: main.c list.h
+main.o: main.c cpucycles.h list.h

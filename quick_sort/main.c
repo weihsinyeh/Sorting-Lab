@@ -3,7 +3,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
+#include "cpucycles.h"
 #include "list.h"
 typedef struct __node {
     int value;
@@ -84,7 +86,37 @@ static bool list_is_ordered(struct list_head *head)
 
     return true;
 }
+static inline void list_replace(struct list_head *old, struct list_head *new)
+{
+    new->next = old->next;
+    new->next->prev = new;
+    new->prev = old->prev;
+    new->prev->next = new;
+}
+void list_swap(struct list_head *entry1, struct list_head *entry2)
+{
+    struct list_head *pos = entry2->prev;
 
+    list_del(entry2);
+    list_replace(entry1, entry2);
+    if (pos == entry1)
+        pos = entry2;
+    list_add(entry1, pos);
+}
+void random_pivot(struct list_head *head)
+{
+    if (!head || list_is_singular(head))
+        return;
+    int r = rand() % list_length(head);
+    struct list_head *cur;
+    list_for_each (cur, head) {
+        if (r == 0)
+            break;
+        r--;
+    }
+    if (head->next != cur)
+        list_swap(head->next, cur);
+}
 /* shuffle array, only work if n < RAND_MAX */
 void shuffle(int *array, size_t n)
 {
@@ -131,6 +163,8 @@ struct list_head *quick_sort(struct list_head *head)
             left = list_new();
             mid = list_new();
 
+            random_pivot(L);
+
             node_t *pivot = list_entry(L, node_t, list);
             value = pivot->value;
 
@@ -163,25 +197,42 @@ struct list_head *quick_sort(struct list_head *head)
     }
     return result;
 }
+const char *filename = "out_ra.txt";
 void main(int argc, char **argv)
 {
-    struct list_head *list = list_new();
+    for (int number = 10; number <= 10000; number++) {
+        size_t count = number;
+        int64_t *before_ticks = calloc(1, sizeof(int64_t));
+        int64_t *after_ticks = calloc(1, sizeof(int64_t));
+        int64_t *exec_times = calloc(1, sizeof(int64_t));
 
-    size_t count = 100000;
-    int *test_arr = calloc(sizeof(int), count);
+        struct list_head *list = list_new();
 
-    for (int i = 0; i < count; ++i)
-        test_arr[i] = i;
-    shuffle(test_arr, count);
+        int *test_arr = calloc(count, sizeof(int));
 
-    while (count--)
-        list = list_construct(list, test_arr[count]);
+        for (int i = 0; i < count; ++i)
+            test_arr[i] = i;
+        //shuffle(test_arr, count);
+        while (count--)
+            list = list_construct(list, test_arr[count]);
 
-    list = quick_sort(list);
-    assert(list_is_ordered(list));
-    // print(list);
-    list_free(list);
-    free(test_arr);
+        before_ticks[0] = cpucycles();
+        list = quick_sort(list);
+        after_ticks[0] = cpucycles();
+        exec_times[0] = after_ticks[0] - before_ticks[0];
 
+        FILE *output_file = fopen(filename, "a");
+        if (!output_file) {
+            perror("fopen");
+            exit(EXIT_FAILURE);
+        }
+        fprintf(output_file, "%ld\n", exec_times[0]);
+        fclose(output_file);
+
+        assert(list_is_ordered(list));
+
+        list_free(list);
+        free(test_arr);
+    }
     return;
 }
