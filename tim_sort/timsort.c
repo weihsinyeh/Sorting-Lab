@@ -19,6 +19,8 @@ struct pair {
 
 static size_t stk_size;
 
+
+
 static struct list_head *merge(void *priv,
                                list_cmp_func_t cmp,
                                struct list_head *a,
@@ -26,27 +28,27 @@ static struct list_head *merge(void *priv,
 {
     struct list_head *head;
     struct list_head **tail = &head;
-
-    for (;;) {
+    for (;a && b;) {
         /* if equal, take 'a' -- important for sort stability */
         if (cmp(priv, a, b) <= 0) {
             *tail = a;
+            while(a->next && cmp(priv, a->next, b) <= 0)
+                a = a->next;
             tail = &a->next;
-            a = a->next;
-            if (!a) {
-                *tail = b;
-                break;
-            }
-        } else {
+            a = *tail;
+        } 
+        else {
             *tail = b;
+            while(b->next && cmp(priv, a, b->next) > 0)
+                b = b->next;
             tail = &b->next;
-            b = b->next;
-            if (!b) {
-                *tail = a;
-                break;
-            }
+            b = *tail;
         }
     }
+    if (!a) 
+        *tail = b;
+    else
+        *tail = a;
     return head;
 }
 
