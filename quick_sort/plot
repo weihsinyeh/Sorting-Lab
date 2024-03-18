@@ -7,10 +7,7 @@ set title 'performance comparison between random data and ascending data'
 set terminal png
 set output 'runtime.png'
 
-plot "out_random.txt" using 1 with points title "random data" linecolor "orange", \
-     "out_ascending.txt" using 1 with points title "ascend data", \
-     "out_descend.txt" using 1 with points title "descend data" linecolor "red", \
-     "out_r.txt" using 1 with points title "random data with random pivot" linecolor "blue", \
-     "out_ra.txt" using 1 with points title "ascend data with random pivot" linecolor "pink", \
-     "out_rd.txt" using 1 with points title "descend data with random pivot" linecolor "purple"
+plot "out_rm_me.txt" using 1 with points title "random data with median pivot" linecolor "orange", \
+     "out_am_me.txt" using 1 with points title "ascend data with median pivot", \
+     "out_dm_me.txt" using 1 with points title "descend data with median pivot" linecolor "red", 
 replot 

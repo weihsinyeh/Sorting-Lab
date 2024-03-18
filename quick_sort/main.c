@@ -117,6 +117,19 @@ void random_pivot(struct list_head *head)
     if (head->next != cur)
         list_swap(head->next, cur);
 }
+void mid_pivot(struct list_head *head)
+{
+    if (!head || list_is_singular(head))
+        return;
+    struct list_head *posptr = head->next;
+    struct list_head *negptr = head->prev;
+    while (posptr != negptr && posptr->next != negptr) {
+        posptr = posptr->next;
+        negptr = negptr->prev;
+    }
+    if (head->next != posptr)
+        list_swap(head->next, posptr);
+}
 /* shuffle array, only work if n < RAND_MAX */
 void shuffle(int *array, size_t n)
 {
@@ -162,8 +175,8 @@ struct list_head *quick_sort(struct list_head *head)
             right = list_new();
             left = list_new();
             mid = list_new();
-
-            random_pivot(L);
+            mid_pivot(L);
+            //random_pivot(L);
 
             node_t *pivot = list_entry(L, node_t, list);
             value = pivot->value;
@@ -197,7 +210,7 @@ struct list_head *quick_sort(struct list_head *head)
     }
     return result;
 }
-const char *filename = "out_ra.txt";
+const char *filename = "out_rm_me.txt";
 void main(int argc, char **argv)
 {
     for (int number = 10; number <= 10000; number++) {
@@ -212,7 +225,7 @@ void main(int argc, char **argv)
 
         for (int i = 0; i < count; ++i)
             test_arr[i] = i;
-        //shuffle(test_arr, count);
+        shuffle(test_arr, count);
         while (count--)
             list = list_construct(list, test_arr[count]);
 
