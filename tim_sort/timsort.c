@@ -28,8 +28,9 @@ static struct list_head *merge(void *priv,
 {
     struct list_head *head;
     struct list_head **tail = &head;
+    
     for (;a && b;) {
-        /* if equal, take 'a' -- important for sort stability */
+        // if equal, take 'a' -- important for sort stability 
         if (cmp(priv, a, b) <= 0) {
             *tail = a;
             while(a->next && cmp(priv, a->next, b) <= 0)
@@ -49,6 +50,28 @@ static struct list_head *merge(void *priv,
         *tail = b;
     else
         *tail = a;
+    /*
+    for (;;) {
+        // if equal, take 'a' -- important for sort stability 
+        if (cmp(priv, a, b) <= 0) {
+            *tail = a;
+            tail = &a->next;
+            a = a->next;
+            if (!a) {
+                *tail = b;
+                break;
+            }
+        } else {
+            *tail = b;
+            tail = &b->next;
+            b = b->next;
+            if (!b) {
+                *tail = a;
+                break;
+            }
+        }
+    }
+    */
     return head;
 }
 

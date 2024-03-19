@@ -5,21 +5,37 @@
 #include <assert.h>
 #include "list.h"
 #include "sort_impl.h"
-
+#include "cpucycles.h"
 typedef struct {
     struct list_head list;
     int val;
     int seq;
 } element_t;
 
-#define SAMPLES 1000
+int SAMPLES = 10;
 
 static void create_sample(struct list_head *head, element_t *space, int samples)
 {
-    printf("Creating sample\n");
+    //printf("Creating sample\n");
+    int sorted_number = 32;
+    int sorted_start = 0;
+    int sort = 0;
     for (int i = 0; i < samples; i++) {
         element_t *elem = space + i;
-        elem->val = rand();
+        if(sort == 0) {
+            elem->val = rand();
+            if(elem->val % 5 == 0){
+                sorted_number = rand() % 32;
+                sorted_start=elem->val;
+                sort = 1;
+            }
+        }
+        else{
+            elem->val = ++sorted_start; 
+            sorted_number--;
+            if(sorted_number == 0)
+                sort = 0;
+        }
         list_add_tail(&elem->list, head);
     }
 }
@@ -95,7 +111,8 @@ typedef struct {
     char *name;
     test_func_t impl;
 } test_t;
-
+const char *filename = "out_coutting_timsort_sorted_input.txt";
+//const char *filename = "out_coutting_timsort_gallop_sorted_input.txt";
 int main(void)
 {
     struct list_head sample_head, warmdata_head, testdata_head;
@@ -111,29 +128,47 @@ int main(void)
     };
     test_t *test = tests;
 
-    INIT_LIST_HEAD(&sample_head);
-
-    element_t *samples = malloc(sizeof(*samples) * SAMPLES);
-    element_t *warmdata = malloc(sizeof(*warmdata) * SAMPLES);
-    element_t *testdata = malloc(sizeof(*testdata) * SAMPLES);
-
-    create_sample(&sample_head, samples, nums);
-
     while (test->impl) {
         printf("==== Testing %s ====\n", test->name);
-        /* Warm up */
-        INIT_LIST_HEAD(&warmdata_head);
-        INIT_LIST_HEAD(&testdata_head);
-        copy_list(&sample_head, &testdata_head, testdata);
-        copy_list(&sample_head, &warmdata_head, warmdata);
-        test->impl(&count, &warmdata_head, compare);
+        for (int number = 10; number <= 100000; number++) {
+            INIT_LIST_HEAD(&sample_head);
+            element_t *samples = calloc(number, sizeof(*samples));
+            element_t *testdata = calloc(number, sizeof(*testdata));
 
-        /* Test */
-        count = 0;
-        test->impl(&count, &testdata_head, compare);
-        printf("  Comparisons:    %d\n", count);
-        printf("  List is %s\n",
-               check_list(&testdata_head, nums) ? "sorted" : "not sorted");
+            create_sample(&sample_head, samples, number);
+            /* Warm up */
+            INIT_LIST_HEAD(&testdata_head);
+            copy_list(&sample_head, &testdata_head, testdata);
+
+            /* Test */
+            int64_t *before_ticks = calloc(1, sizeof(int64_t));
+            int64_t *after_ticks = calloc(1, sizeof(int64_t));
+            int64_t *exec_times = calloc(1, sizeof(int64_t));
+            SAMPLES = number;
+
+            count = 0;
+            before_ticks[0] = cpucycles();
+            
+            test->impl(&count, &testdata_head, compare);
+
+            after_ticks[0] = cpucycles();
+            exec_times[0] = after_ticks[0] - before_ticks[0];
+
+            FILE *output_file = fopen(filename, "a");
+            if (!output_file) {
+                perror("fopen");
+                exit(EXIT_FAILURE);
+            }
+            //fprintf(output_file, "%ld\n", exec_times[0]);
+            fprintf(output_file, "%d\n", count);
+            fclose(output_file);
+
+            // printf("  Comparisons:    %d\n", count);
+            // printf("  List is %s\n",
+            //    check_list(&testdata_head, nums) ? "sorted" : "not sorted");
+            free(testdata);
+            free(samples);
+        }
         test++;
     }
 

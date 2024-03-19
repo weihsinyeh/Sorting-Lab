@@ -8,3 +8,11 @@ quick_sort/out1.txt
 quick_sort/out2.txt
 quick_sort/main
 quick_sort/main.out
+tim_sort/out_coutting_timsort_gallop_sorted_input.txt
+tim_sort/out_coutting_timsort_sorted_input.txt
+tim_sort/out_timsort_compare_time.txt
+tim_sort/out_timsort_gallop_compare_time.txt
+tim_sort/out_timsort_gallop_sorted_input.txt
+tim_sort/out_timsort_gallop.txt
+tim_sort/out_timsort_sorted_input.txt
+tim_sort/out_timsort.txt

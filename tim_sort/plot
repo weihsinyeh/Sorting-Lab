@@ -1,0 +1,12 @@
+reset  
+set title 'my plot'
+set xlabel 'number of element'
+set ylabel 'time (sec)'
+set style fill solid
+set title 'number of comparison on sub sorted input data'
+set terminal png
+set output 'comparison_sorted_input.png'
+
+plot "out_coutting_timsort_gallop_sorted_input.txt" using 1 with points title "timsort with Gallop" ,\
+     "out_coutting_timsort_sorted_input.txt" using 1 with points title "timsort without Gallop" linecolor "orange"
+replot 
