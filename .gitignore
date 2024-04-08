@@ -16,3 +16,4 @@ tim_sort/out_timsort_gallop_sorted_input.txt
 tim_sort/out_timsort_gallop.txt
 tim_sort/out_timsort_sorted_input.txt
 tim_sort/out_timsort.txt
+tim_sort/cachegrind.out*

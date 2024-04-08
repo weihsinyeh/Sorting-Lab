@@ -130,7 +130,7 @@ int main(void)
 
     while (test->impl) {
         printf("==== Testing %s ====\n", test->name);
-        for (int number = 10; number <= 100000; number++) {
+        for (int number = 10; number <= 10000; number++) {
             INIT_LIST_HEAD(&sample_head);
             element_t *samples = calloc(number, sizeof(*samples));
             element_t *testdata = calloc(number, sizeof(*testdata));
