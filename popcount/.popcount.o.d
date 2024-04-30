@@ -1,1 +1,1 @@
-popcount.o: popcount.c
+popcount.o: popcount.c cpucycles.h

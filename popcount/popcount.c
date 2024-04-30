@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <time.h>
+#include "cpucycles.h"
 #define bench(statement)                                                  \
     ({                                                                    \
         struct timespec _tt1, _tt2;                                       \
@@ -61,29 +62,41 @@ int lookuptable_popcount(unsigned v)
     return table[v & 0xff] + table[(v >> 8) & 0xff] +
            table[(v >> 16) & 0xff] + table[(v >> 24) & 0xff];
 }
+int (*function_p[])(unsigned) = {   lookuptable_popcount, \
+                                    popcount_branchless, \ 
+                                    popcount_oct, \
+                                    popcount_nibble};
+static char* function_name[5] = {"__builtin_popcount", "lookup table", "branchless", "oct", "nibble"};
 int main(void)
 {
-    long long builtin_time = 0;
-    long long lookuptable_time = 0;
-    long long original_time = 0;
-    long long nibble_time = 0;
-    long long oct_time = 0;
+    int64_t execution_time[5] = {0};
+    int64_t builtin_time = 0;
+    int64_t lookuptable_time = 0;
+    int64_t original_time = 0;
+    int64_t nibble_time = 0;
+    int64_t oct_time = 0;
+    int64_t *before_ticks = calloc(1, sizeof(int64_t));
+    int64_t *after_ticks = calloc(1, sizeof(int64_t));
+    int64_t *exec_times = calloc(1, sizeof(int64_t));
+
     for (unsigned i = 0; i < 1000000000; i++) {
-        builtin_time += bench(__builtin_popcount(i));
-        lookuptable_time += bench(lookuptable_popcount(i));
-        original_time += bench(popcount_branchless(i));
-        oct_time += bench(popcount_oct(i));
-        nibble_time += bench(popcount_nibble(i));
+       
+        before_ticks[0] = cpucycles();
+        __builtin_popcount(i);
+        after_ticks[0] = cpucycles();
+        execution_time[0] += after_ticks[0] - before_ticks[0];
+        
+        for (int j =0;j<4;j++){
+            before_ticks[0] = cpucycles();
+            function_p[j](i);
+            after_ticks[0] = cpucycles();
+            execution_time[j+1] += after_ticks[0] - before_ticks[0];
+        }
     }
-    printf("popcount use builtin function avg time : %lf\n",
-           (double) builtin_time / 1000000000);
-    printf("popcount use lookup table avg time : %lf\n",
-           (double) lookuptable_time / 1000000000);
-    printf("popcount use branchless avg time : %lf\n",
-           (double) original_time / 1000000000);
-    printf("popcount use nibble avg time : %lf\n",
-           (double) nibble_time / 1000000000);
-    printf("popcount use oct avg time : %lf\n", (double) oct_time / 1000000000);
+    for(int j=0;j<5;j++){
+        printf("popcount use %s avg cpu cycle : %ld\n",function_name[j], \
+                (int64_t) execution_time[j] / 1000000000);
+    }
 
     return 0;
 }
